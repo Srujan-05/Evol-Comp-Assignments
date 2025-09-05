@@ -1,5 +1,6 @@
 # implementation of all the DE Algorithm related classes.
 import numpy as np
+import random
 
 
 class DifferentialEvolution:
@@ -14,7 +15,6 @@ class DifferentialEvolution:
         :param K: The K value in the differential evolution
         :param optimisation_option: min or max for minimisation or maximisation respectively
         """
-
         self.popl_size = population_size
         self.number_gens = no_of_gens
         self.num_des_vars = no_design_vars
@@ -23,15 +23,12 @@ class DifferentialEvolution:
         self.crossover_prob = crossover_prob
         self.K = K
         self.opt_op = optimisation_option
+        self.generations = {}
+        self.global_bests = []
 
     def mutantVectorGeneration(self, candidates, target_cand, F):
-        while True:
-            vector_r1 = np.random.choice(candidates)
-            vector_r2 = np.random.choice(candidates)
-            vector_r3 = np.random.choice(candidates)
-            if vector_r1.vector != target_cand.vector and vector_r1.vector != vector_r2.vector and vector_r1.vector != vector_r3.vector and vector_r3.vector != vector_r2.vector:
-                break
-
+        pool = [c for c in candidates if c is not target_cand]
+        vector_r1, vector_r2, vector_r3 = random.sample(pool, 3)
         mutant_vec = target_cand.vector + self.K * (vector_r1.vector - target_cand.vector) + F * (vector_r2.vector - vector_r3.vector)
         mutant_cand = Candidates(vector=mutant_vec)
         return mutant_cand
@@ -54,7 +51,34 @@ class DifferentialEvolution:
         return trail_cand
 
     def run(self):
-        pass
+        curr_gen = 0
+        current_cands = self.initailiseCandidates()
+        while curr_gen < self.number_gens or not self.checkConvergence():
+            self.generations[curr_gen] = current_cands
+            F = 4 * np.random.random_sample() - 2
+            next_cands = []
+            for cand in current_cands:
+                while True:
+                    mutant_cand = self.mutantVectorGeneration(current_cands, cand, F)
+                    trail_cand = self.trialVectorGeneration(cand, mutant_cand)
+                    for constraint in self.constraints:
+                        if not constraint.checkConstraint(trail_cand):
+                            continue
+                    break
+                result, _ = self.fitness.checkOptima([trail_cand, cand])
+                if result == 0:
+                    next_cands.append(trail_cand)
+                else:
+                    next_cands.append(cand)
+            best, vals = self.fitness.checkOptima(next_cands)
+            self.global_bests.append(vals[best])
+            curr_gen += 1
+
+    def checkConvergence(self):
+        return False
+
+    def initailiseCandidates(self):
+        return []
 
 
 class Candidates:
@@ -69,7 +93,7 @@ class Constraints:
         """
         :param constraint: the constraint to be supplied as a function of the design variables with the constraint
                             operation against 0
-        :param type: ['<', '>', '<=', '>=', '!='] are the only arguments to be accepted. this
+        :param type: ['<', '>', '<=', '>=', '!=', '=='] are the only arguments to be accepted. this
                     tells us what type of constraint we are applying.
         example:
             if the applied constraint on the problem is x < 100, the class initialisation is as:
