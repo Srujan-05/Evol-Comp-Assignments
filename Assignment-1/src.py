@@ -169,17 +169,12 @@ class Constraints:
             return constraint_value != 0
         elif self.type == '==':
             return constraint_value == 0
-
-
-    """
-    Make sure all the trail vectors satisfy constraints -> if not regenerate mutant vector and trail vector
-    Not to myself p2 -> where are we comparing fitness of trail vector with parent vector and 
-    checking which one to push to the next generation
-    how does it integrate with this code?"""
         
 
 
 if __name__ == "__main__":
+
+    #constrains for egg holder and holder table
     egg_holder_constraints = [
         Constraints(lambda vec: vec[0] - 512, '<='),    # x <= 512
         Constraints(lambda vec: -vec[0] - 512, '<='),   # x >= -512
