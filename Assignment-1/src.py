@@ -1,6 +1,7 @@
 # implementation of all the DE Algorithm related classes.
 import numpy as np
 import random
+import struct
 
 
 class DifferentialEvolution:
@@ -36,16 +37,16 @@ class DifferentialEvolution:
     def trialVectorGeneration(self, target_cand, mutant_cand):
         trial_vector = target_cand.vector.copy()
         for j in range(len(trial_vector)):
-            bit_str_tar = f'{target_cand.vector[j]:0{13}b}'[2:]
-            bit_str_mut = f'{mutant_cand.vector[j]:0{13}b}'[2:]
-            res_bit = '0b'
+            bit_str_tar = self.float_to_bitstr(target_cand.vector[j])
+            bit_str_mut = self.float_to_bitstr(mutant_cand.vector[j])
+            res_bit = ''
             for k in range(len(bit_str_tar)):
                 if np.random.random(1) <= self.crossover_prob:
                     res_bit += bit_str_mut[k]
                 else:
                     res_bit += bit_str_tar[k]
 
-            trial_vector[j] = int(res_bit, 2)
+            trial_vector[j] = self.bitstr_to_float(res_bit)
 
         trail_cand = Candidates(vector=trial_vector)
         return trail_cand
@@ -103,6 +104,26 @@ class DifferentialEvolution:
                 
         return candidates
 
+
+    def float_to_bitstr(self, x, bits=64):
+        # bits must be 32 or 64
+        if bits == 32:
+            u = np.array([x], dtype=np.float32).view(np.uint32)[0]
+        else:
+            u = np.array([x], dtype=np.float64).view(np.uint64)[0]
+        return f'{int(u):0{bits}b}'
+
+    def bitstr_to_float(self, bstr, bits=64):
+        # ensure correct width
+        if len(bstr) < bits:
+            bstr = bstr.zfill(bits)
+        elif len(bstr) > bits:
+            bstr = bstr[-bits:]  # keep the least-significant bits if too long
+        i = int(bstr, 2)
+        if bits == 32:
+            return np.array([i], dtype=np.uint32).view(np.float32)[0]
+        else:
+            return np.array([i], dtype=np.uint64).view(np.float64)[0]
 
 
 class Candidates:
