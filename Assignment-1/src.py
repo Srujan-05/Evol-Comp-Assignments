@@ -79,7 +79,53 @@ class DifferentialEvolution:
             curr_gen += 1
 
     def checkConvergence(self):
+        if len(self.global_bests) < 2:
+            return False
+        
+        # Check fitness improvement stagnation
+        recent_improvement = abs(self.global_bests[-1] - self.global_bests[-2])
+        if recent_improvement < self.convergence_threshold:
+            self.stagnation_count += 1
+        else:
+            self.stagnation_count = 0
+        
+        # Check population diversity (optional)
+        if len(self.generations) > 0:
+            current_pop = list(self.generations.values())[-1]
+            diversity = self.calculatePopulationDiversity(current_pop)
+            if diversity < self.convergence_threshold:
+                return True
+        
+        return self.stagnation_count >= self.max_stagnation
+
+    def calculatePopulationDiversity(self, population):
+        """Calculate the diversity of the population"""
+        if len(population) <= 1:
+            return 0
+        
+        vectors = np.array([cand.vector for cand in population])
+        mean_vector = np.mean(vectors, axis=0)
+        diversity = np.mean(np.sqrt(np.sum((vectors - mean_vector) ** 2, axis=1)))
+        return diversity
+
+    def checkOptima(self, candidate):
+        """
+        Check if a candidate is at the global optimum
+        Returns True if optimum is found, False otherwise
+        """
+        if self.fitness is None:
+            return False
+        
+        
+        fitness_val = self.fitness.checkOptima([candidate])[1][0]
+        
+        if hasattr(self.fitness, 'known_optimum'):
+            known_optimum = self.fitness.known_optimum
+            if abs(fitness_val - known_optimum) < self.convergence_threshold:
+                return True
+        
         return False
+
 
     def initailiseCandidates(self):
         candidates = []
