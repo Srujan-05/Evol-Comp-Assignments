@@ -62,6 +62,18 @@ class Candidates:
         self.vector = np.zeros(shape=(num_design_vars, )) if vector is None else vector
         self.best = None
         self.best_vec = np.zeros(shape=self.vector.shape)
+        """
+        Notes for myself -> 
+        Initialize candidates => randomly or all over the solution space
+        if its all over the solution space, how would I do that?
+
+        each candidate is a point in space
+
+        seperate class Candidate => self.x, self.y
+        class Candidates => vector vs best_vec?
+              collection of candidate 
+              keep track of best in generation and best across all generations
+        """
 
 
 class Constraints:
@@ -79,6 +91,19 @@ class Constraints:
         """
         self.constraint = constraint
         self.type = type
+
+    """
+    1. Make sure initial candidates follow contraints -> if not regenerate until contsraints are 
+    satisfied
+    2. Make sure all the trail vectors satisfy constraints -> 
+    if not regenerate mutant vector and trail vector
+    """
+
+    """
+    Not to myself p2 -> where are we comparing fitness of trail vector with parent vector and 
+    checking which one to push to the next generation
+    how does it integrate with this code?"""
+        
 
 
 if __name__ == "__main__":
