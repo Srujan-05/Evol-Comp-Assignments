@@ -82,12 +82,25 @@ class DifferentialEvolution:
         return []
 
     def float_to_bitstr(self, x, bits=64):
-        [d] = struct.unpack(">Q", struct.pack(">d", x))  # pack float64 → int
-        return f"{d:0{bits}b}"
+        # bits must be 32 or 64
+        if bits == 32:
+            u = np.array([x], dtype=np.float32).view(np.uint32)[0]
+        else:
+            u = np.array([x], dtype=np.float64).view(np.uint64)[0]
+        return f'{int(u):0{bits}b}'
 
-    def bitstr_to_float(self, bstr):
+    def bitstr_to_float(self, bstr, bits=64):
+        # ensure correct width
+        if len(bstr) < bits:
+            bstr = bstr.zfill(bits)
+        elif len(bstr) > bits:
+            bstr = bstr[-bits:]  # keep the least-significant bits if too long
         i = int(bstr, 2)
-        return struct.unpack(">d", struct.pack(">Q", i))[0]
+        if bits == 32:
+            return np.array([i], dtype=np.uint32).view(np.float32)[0]
+        else:
+            return np.array([i], dtype=np.uint64).view(np.float64)[0]
+
 
 class Candidates:
     def __init__(self, num_design_vars=0, vector=None):
