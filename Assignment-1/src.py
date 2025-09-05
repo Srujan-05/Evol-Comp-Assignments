@@ -1,6 +1,7 @@
 # implementation of all the DE Algorithm related classes.
 import numpy as np
 import random
+import struct
 
 
 class DifferentialEvolution:
@@ -36,16 +37,16 @@ class DifferentialEvolution:
     def trialVectorGeneration(self, target_cand, mutant_cand):
         trial_vector = target_cand.vector.copy()
         for j in range(len(trial_vector)):
-            bit_str_tar = f'{target_cand.vector[j]:0{13}b}'[2:]
-            bit_str_mut = f'{mutant_cand.vector[j]:0{13}b}'[2:]
-            res_bit = '0b'
+            bit_str_tar = self.float_to_bitstr(target_cand.vector[j])
+            bit_str_mut = self.float_to_bitstr(mutant_cand.vector[j])
+            res_bit = ''
             for k in range(len(bit_str_tar)):
                 if np.random.random(1) <= self.crossover_prob:
                     res_bit += bit_str_mut[k]
                 else:
                     res_bit += bit_str_tar[k]
 
-            trial_vector[j] = int(res_bit, 2)
+            trial_vector[j] = self.bitstr_to_float(res_bit)
 
         trail_cand = Candidates(vector=trial_vector)
         return trail_cand
@@ -80,6 +81,13 @@ class DifferentialEvolution:
     def initailiseCandidates(self):
         return []
 
+    def float_to_bitstr(self, x, bits=64):
+        [d] = struct.unpack(">Q", struct.pack(">d", x))  # pack float64 → int
+        return f"{d:0{bits}b}"
+
+    def bitstr_to_float(self, bstr):
+        i = int(bstr, 2)
+        return struct.unpack(">d", struct.pack(">Q", i))[0]
 
 class Candidates:
     def __init__(self, num_design_vars=0, vector=None):
