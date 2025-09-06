@@ -25,6 +25,7 @@ class DifferentialEvolution:
         self.opt_op = optimisation_option
         self.generations = {}
         self.global_bests = []
+        self.convergence_threshold = 1e-3
 
     def mutantVectorGeneration(self, candidates, target_cand, F):
         pool = [c for c in candidates if c is not target_cand]
@@ -107,25 +108,6 @@ class DifferentialEvolution:
         diversity = np.mean(np.sqrt(np.sum((vectors - mean_vector) ** 2, axis=1)))
         return diversity
 
-    def checkOptima(self, candidate):
-        """
-        Check if a candidate is at the global optimum
-        Returns True if optimum is found, False otherwise
-        """
-        if self.fitness is None:
-            return False
-        
-        
-        fitness_val = self.fitness.checkOptima([candidate])[1][0]
-        
-        if hasattr(self.fitness, 'known_optimum'):
-            known_optimum = self.fitness.known_optimum
-            if abs(fitness_val - known_optimum) < self.convergence_threshold:
-                return True
-        
-        return False
-
-
     def initailiseCandidates(self):
         candidates = []
         
@@ -143,12 +125,11 @@ class DifferentialEvolution:
                         valid = False
                         break
 
-                    if valid:
-                        candidates.append(candidate)
-                        break
+                if valid:
+                    candidates.append(candidate)
+                    break
                 
         return candidates
-
 
     def float_to_bitstr(self, x, bits=64):
         if bits == 32:
@@ -212,7 +193,15 @@ class Constraints:
             return constraint_value != 0
         elif self.type == '==':
             return constraint_value == 0
-        
+
+
+class FitnessFunc:
+    def __init__(self, fitness_function):
+        """
+        :param fitness_function: the fitness function in terms of all the design variables.
+                                Can be a lambda function or a simple function.
+        """
+        self.fit_func = fitness_function
 
 
 if __name__ == "__main__":
