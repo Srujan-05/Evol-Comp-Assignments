@@ -1,7 +1,6 @@
 # implementation of all the DE Algorithm related classes.
 import numpy as np
 import random
-import struct
 
 
 class DifferentialEvolution:
@@ -152,7 +151,6 @@ class DifferentialEvolution:
 
 
     def float_to_bitstr(self, x, bits=64):
-        # bits must be 32 or 64
         if bits == 32:
             u = np.array([x], dtype=np.float32).view(np.uint32)[0]
         else:
@@ -160,11 +158,10 @@ class DifferentialEvolution:
         return f'{int(u):0{bits}b}'
 
     def bitstr_to_float(self, bstr, bits=64):
-        # ensure correct width
         if len(bstr) < bits:
             bstr = bstr.zfill(bits)
         elif len(bstr) > bits:
-            bstr = bstr[-bits:]  # keep the least-significant bits if too long
+            bstr = bstr[-bits:]
         i = int(bstr, 2)
         if bits == 32:
             return np.array([i], dtype=np.uint32).view(np.float32)[0]
