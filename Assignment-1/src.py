@@ -1,7 +1,11 @@
 # implementation of all the DE Algorithm related classes.
+from __future__ import annotations
 import numpy as np
 import random
 import struct
+import numpy as np
+import matplotlib.pyplot as plt
+from typing import List, Sequence, Tuple, Optional
 
 
 class DifferentialEvolution:
@@ -26,6 +30,11 @@ class DifferentialEvolution:
         self.opt_op = optimisation_option
         self.generations = {}
         self.global_bests = []
+        #Convergence constraints added new
+        self.convergence_threshold = 1e-8
+        self.stagnation_count = 0
+        self.max_stagnation = 50
+
 
     def mutantVectorGeneration(self, candidates, target_cand, F):
         pool = [c for c in candidates if c is not target_cand]
@@ -54,7 +63,10 @@ class DifferentialEvolution:
     def run(self):
         curr_gen = 0
         current_cands = self.initailiseCandidates()
-        while curr_gen < self.number_gens or not self.checkConvergence():
+        #while curr_gen < self.number_gens or not self.checkConvergence():
+        while curr_gen < self.number_gens: #and not self.checkConvergence():  #new condition due to constrains added 
+            if curr_gen % 10 == 0:
+                print(f"[DE] generation {curr_gen}/{self.number_gens}")
             self.generations[curr_gen] = current_cands
             F = 4 * np.random.random_sample() - 2
             next_cands = []
@@ -76,6 +88,7 @@ class DifferentialEvolution:
                     next_cands.append(cand)
             best, vals = self.fitness.checkOptima(next_cands)
             self.global_bests.append(vals[best])
+            current_cands = next_cands
             curr_gen += 1
 
     def checkConvergence(self):
@@ -129,26 +142,25 @@ class DifferentialEvolution:
 
     def initailiseCandidates(self):
         candidates = []
-        
+
+        # Choose bounds for your problem (uncomment the one you’re running):
+        # Eggholder:
+        # low, high = np.array([-512, -512], dtype=float), np.array([512, 512], dtype=float)
+        # Holder table:
+        low, high = np.array([-10, -10], dtype=float), np.array([10, 10], dtype=float)
+
         for _ in range(self.popl_size):
             while True:
                 candidate = Candidates(num_design_vars=self.num_des_vars)
+                candidate.vector = np.random.uniform(low, high)  # sample inside feasible box
 
-                '''Note: might have to reconsider this range
-                 if candidates are to be spread all over the solution space, how would I do that?'''
-                candidate.vector = np.random.uniform(-1000,1000, self.num_des_vars)
+                # Check ALL constraints first
+                if all(constraint.checkConstraint(candidate) for constraint in self.constraints):
+                    candidates.append(candidate)
+                    break  # ✅ break the outer while True once accepted
 
-                valid = True
-                for constrain in self.constraints:
-                    if not constrain.checkConstraint(candidate):
-                        valid = False
-                        break
-
-                    if valid:
-                        candidates.append(candidate)
-                        break
-                
         return candidates
+
 
 
     def float_to_bitstr(self, x, bits=64):
@@ -202,7 +214,10 @@ class Constraints:
         self.type = type
 
     def checkConstraint(self, candidate):
-        constraint_value = self.constraint(candidate.vector)
+        v = np.asarray(candidate.vector, dtype=float)
+        if not np.all(np.isfinite(v)):
+            return False
+        constraint_value = self.constraint(v)
         if self.type == '<':
             return constraint_value < 0
         elif self.type == '>':
@@ -215,8 +230,6 @@ class Constraints:
             return constraint_value != 0
         elif self.type == '==':
             return constraint_value == 0
-        
-
 
 if __name__ == "__main__":
 
