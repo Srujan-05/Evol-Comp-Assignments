@@ -1,6 +1,4 @@
 # implementation of the results visualization class.
-# utils.py
-# Fitness and visualization helpers for Differential Evolution
 import numpy as np
 import matplotlib.pyplot as plt
 
