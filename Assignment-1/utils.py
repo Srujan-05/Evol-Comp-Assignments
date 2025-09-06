@@ -1,6 +1,8 @@
 # implementation of the results visualization class.
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from mpl_toolkits.mplot3d import Axes3D
 
 
 class FitnessFunc:
@@ -144,6 +146,104 @@ class Visualization:
             plt.grid(True, alpha=0.3)
             plt.legend()
             plt.tight_layout()
+
+        if savepath:
+            plt.savefig(savepath, dpi=160, bbox_inches="tight")
+        if show:
+            plt.show()
+        else:
+            plt.close()
+
+    @staticmethod
+    def visualize3DConvergence(
+            de,
+            title="Candidates Convergence",
+            savepath="candidates_convergence.mp4",
+            show=True,
+    ):
+        if not de.generations:
+            raise ValueError("No generations recorded. Run de.run() before plotting.")
+
+        if de.num_des_vars == 3:
+            # 3D visualization
+            fig = plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(111, projection='3d')
+
+            def update(frame):
+                ax.clear()
+                gen = frame
+                if gen in de.generations:
+                    cands = de.generations[gen]
+                    xs = [c.vector[0] for c in cands]
+                    ys = [c.vector[1] for c in cands]
+                    zs = [c.vector[2] for c in cands]
+                    ax.scatter(xs, ys, zs, c='b', marker='o')
+                    ax.set_title(f'{title} - Generation {gen}')
+                    ax.set_xlabel('X')
+                    ax.set_ylabel('Y')
+                    ax.set_zlabel('Z')
+                    ax.set_xlim(-512, 512)
+                    ax.set_ylim(-512, 512)
+                    ax.set_zlim(-512, 512)
+
+            ani = FuncAnimation(fig, update, frames=range(max(de.generations.keys()) + 1), interval=200)
+            if savepath:
+                ani.save(savepath, writer='ffmpeg', dpi=160)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+        elif de.num_des_vars == 2:
+            # 2D visualization
+            fig = plt.figure(figsize=(8, 6))
+            ax = fig.add_subplot(111)
+
+            def update(frame):
+                ax.clear()
+                gen = frame
+                if gen in de.generations:
+                    cands = de.generations[gen]
+                    xs = [c.vector[0] for c in cands]
+                    ys = [c.vector[1] for c in cands]
+                    ax.scatter(xs, ys, c='b', marker='o')
+                    ax.set_title(f'{title} - Generation {gen}')
+                    ax.set_xlabel('X')
+                    ax.set_ylabel('Y')
+                    ax.set_xlim(-512, 512)
+                    ax.set_ylim(-512, 512)
+                    ax.grid(True, alpha=0.3)
+
+            ani = FuncAnimation(fig, update, frames=range(max(de.generations.keys()) + 1), interval=200)
+            if savepath:
+                ani.save(savepath, writer='ffmpeg', dpi=160)
+            if show:
+                plt.show()
+            else:
+                plt.close(fig)
+        else:
+            raise ValueError("Visualization supports 2 or 3 design variables only.")
+
+    @staticmethod
+    def visualizeBestConvergence(
+            de,
+            title="Best Solution Convergence",
+            savepath=None,
+            show=True,
+    ):
+        if not de.global_bests:
+            raise ValueError("No global bests recorded. Run de.run() before plotting.")
+
+        best_fitnesses = [gb[0] for gb in de.global_bests]
+        avg_fitness = de.avg_fitness
+        plt.figure(figsize=(8, 5))
+        plt.plot(range(len(best_fitnesses)), best_fitnesses, label='Best Fitness')
+        plt.plot(range(len(best_fitnesses)), avg_fitness, ls='--', label="Avg Fitness")
+        plt.title(title + ", Population: " + str(de.popl_size) + ", Max Generations: " + str(de.number_gens))
+        plt.xlabel('Generation')
+        plt.ylabel('Best Fitness Value')
+        plt.grid(True, alpha=0.3)
+        plt.legend()
+        plt.tight_layout()
 
         if savepath:
             plt.savefig(savepath, dpi=160, bbox_inches="tight")

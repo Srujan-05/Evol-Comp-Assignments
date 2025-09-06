@@ -26,6 +26,7 @@ class DifferentialEvolution:
         self.opt_op = optimisation_option
         self.generations = {}
         self.global_bests = []
+        self.avg_fitness = []
         self.convergence_threshold = 1e-9
         self.stagnation_count = 0
         self.max_stagnation = 50
@@ -80,6 +81,7 @@ class DifferentialEvolution:
                 else:
                     next_cands.append(cand)
             best, vals = self.fitness.checkOptima(next_cands)
+            self.avg_fitness.append(np.mean(np.array(vals)))
             self.global_bests.append((vals[best], next_cands[best]))
             curr_gen += 1
             current_cands = next_cands
