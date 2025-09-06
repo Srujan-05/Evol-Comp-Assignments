@@ -1,11 +1,7 @@
 # implementation of all the DE Algorithm related classes.
 from __future__ import annotations
-import numpy as np
 import random
-import struct
 import numpy as np
-import matplotlib.pyplot as plt
-from typing import List, Sequence, Tuple, Optional
 
 
 class DifferentialEvolution:
@@ -35,7 +31,6 @@ class DifferentialEvolution:
         self.stagnation_count = 0
         self.max_stagnation = 50
 
-
     def mutantVectorGeneration(self, candidates, target_cand, F):
         pool = [c for c in candidates if c is not target_cand]
         vector_r1, vector_r2, vector_r3 = random.sample(pool, 3)
@@ -63,8 +58,8 @@ class DifferentialEvolution:
     def run(self):
         curr_gen = 0
         current_cands = self.initailiseCandidates()
-        #while curr_gen < self.number_gens or not self.checkConvergence():
-        while curr_gen < self.number_gens: #and not self.checkConvergence():  #new condition due to constrains added 
+        while curr_gen < self.number_gens or not self.checkConvergence():
+        # while curr_gen < self.number_gens:  #  and not self.checkConvergence():  #new condition due to constrains added
             if curr_gen % 10 == 0:
                 print(f"[DE] generation {curr_gen}/{self.number_gens}")
             self.generations[curr_gen] = current_cands
@@ -121,47 +116,8 @@ class DifferentialEvolution:
         diversity = np.mean(np.sqrt(np.sum((vectors - mean_vector) ** 2, axis=1)))
         return diversity
 
-    def checkOptima(self, candidate):
-        """
-        Check if a candidate is at the global optimum
-        Returns True if optimum is found, False otherwise
-        """
-        if self.fitness is None:
-            return False
-        
-        
-        fitness_val = self.fitness.checkOptima([candidate])[1][0]
-        
-        if hasattr(self.fitness, 'known_optimum'):
-            known_optimum = self.fitness.known_optimum
-            if abs(fitness_val - known_optimum) < self.convergence_threshold:
-                return True
-        
-        return False
-
-
     def initailiseCandidates(self):
-        candidates = []
-
-        # Choose bounds for your problem (uncomment the one you’re running):
-        # Eggholder:
-        # low, high = np.array([-512, -512], dtype=float), np.array([512, 512], dtype=float)
-        # Holder table:
-        low, high = np.array([-10, -10], dtype=float), np.array([10, 10], dtype=float)
-
-        for _ in range(self.popl_size):
-            while True:
-                candidate = Candidates(num_design_vars=self.num_des_vars)
-                candidate.vector = np.random.uniform(low, high)  # sample inside feasible box
-
-                # Check ALL constraints first
-                if all(constraint.checkConstraint(candidate) for constraint in self.constraints):
-                    candidates.append(candidate)
-                    break  # ✅ break the outer while True once accepted
-
-        return candidates
-
-
+        return []
 
     def float_to_bitstr(self, x, bits=64):
         # bits must be 32 or 64
@@ -230,6 +186,7 @@ class Constraints:
             return constraint_value != 0
         elif self.type == '==':
             return constraint_value == 0
+
 
 if __name__ == "__main__":
 
