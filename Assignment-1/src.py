@@ -1,7 +1,7 @@
 # implementation of all the DE Algorithm related classes.
 import numpy as np
 import random
-import struct
+from utils import FitnessFunc
 
 
 class DifferentialEvolution:
@@ -26,11 +26,15 @@ class DifferentialEvolution:
         self.opt_op = optimisation_option
         self.generations = {}
         self.global_bests = []
+        self.convergence_threshold = 1e-9
+        self.stagnation_count = 0
+        self.max_stagnation = 50
 
     def mutantVectorGeneration(self, candidates, target_cand, F):
         pool = [c for c in candidates if c is not target_cand]
         vector_r1, vector_r2, vector_r3 = random.sample(pool, 3)
         mutant_vec = target_cand.vector + self.K * (vector_r1.vector - target_cand.vector) + F * (vector_r2.vector - vector_r3.vector)
+        mutant_vec = np.clip(mutant_vec, -512, 512)
         mutant_cand = Candidates(vector=mutant_vec)
         return mutant_cand
 
@@ -48,15 +52,16 @@ class DifferentialEvolution:
 
             trial_vector[j] = self.bitstr_to_float(res_bit)
 
+        trial_vector = np.clip(trial_vector, -512, 512)
         trail_cand = Candidates(vector=trial_vector)
         return trail_cand
 
     def run(self):
         curr_gen = 0
         current_cands = self.initailiseCandidates()
-        while curr_gen < self.number_gens or not self.checkConvergence():
+        while curr_gen < self.number_gens and not self.checkConvergence():
             self.generations[curr_gen] = current_cands
-            F = 4 * np.random.random_sample() - 2
+            F = np.random.uniform(-2, 2)
             next_cands = []
             for cand in current_cands:
                 while True:
@@ -75,27 +80,20 @@ class DifferentialEvolution:
                 else:
                     next_cands.append(cand)
             best, vals = self.fitness.checkOptima(next_cands)
-            self.global_bests.append(vals[best])
+            self.global_bests.append((vals[best], next_cands[best]))
             curr_gen += 1
+            current_cands = next_cands
 
     def checkConvergence(self):
         if len(self.global_bests) < 2:
             return False
-        
-        # Check fitness improvement stagnation
-        recent_improvement = abs(self.global_bests[-1] - self.global_bests[-2])
+
+        recent_improvement = abs(self.global_bests[-1][0] - self.global_bests[-2][0])
         if recent_improvement < self.convergence_threshold:
             self.stagnation_count += 1
         else:
             self.stagnation_count = 0
-        
-        # Check population diversity (optional)
-        if len(self.generations) > 0:
-            current_pop = list(self.generations.values())[-1]
-            diversity = self.calculatePopulationDiversity(current_pop)
-            if diversity < self.convergence_threshold:
-                return True
-        
+
         return self.stagnation_count >= self.max_stagnation
 
     def calculatePopulationDiversity(self, population):
@@ -108,25 +106,6 @@ class DifferentialEvolution:
         diversity = np.mean(np.sqrt(np.sum((vectors - mean_vector) ** 2, axis=1)))
         return diversity
 
-    def checkOptima(self, candidate):
-        """
-        Check if a candidate is at the global optimum
-        Returns True if optimum is found, False otherwise
-        """
-        if self.fitness is None:
-            return False
-        
-        
-        fitness_val = self.fitness.checkOptima([candidate])[1][0]
-        
-        if hasattr(self.fitness, 'known_optimum'):
-            known_optimum = self.fitness.known_optimum
-            if abs(fitness_val - known_optimum) < self.convergence_threshold:
-                return True
-        
-        return False
-
-
     def initailiseCandidates(self):
         candidates = []
         
@@ -136,7 +115,9 @@ class DifferentialEvolution:
 
                 '''Note: might have to reconsider this range
                  if candidates are to be spread all over the solution space, how would I do that?'''
-                candidate.vector = np.random.uniform(-1000,1000, self.num_des_vars)
+                # candidate.vector = np.random.uniform(-512, 512, self.num_des_vars)
+                scale = 512
+                candidate.vector = np.random.uniform(-0.5, 0.5, self.num_des_vars) * scale * 2
 
                 valid = True
                 for constrain in self.constraints:
@@ -144,12 +125,10 @@ class DifferentialEvolution:
                         valid = False
                         break
 
-                    if valid:
-                        candidates.append(candidate)
-                        break
-                
+                if valid:
+                    candidates.append(candidate)
+                    break
         return candidates
-
 
     def float_to_bitstr(self, x, bits=64):
         # bits must be 32 or 64
@@ -215,30 +194,23 @@ class Constraints:
             return constraint_value != 0
         elif self.type == '==':
             return constraint_value == 0
-        
 
 
 if __name__ == "__main__":
-
-    #constrains for egg holder and holder table
     egg_holder_constraints = [
         Constraints(lambda vec: vec[0] - 512, '<='),    # x <= 512
-        Constraints(lambda vec: -vec[0] - 512, '<='),   # x >= -512
+        Constraints(lambda vec: vec[0] + 512, '>='),   # x >= -512
         Constraints(lambda vec: vec[1] - 512, '<='),    # y <= 512
-        Constraints(lambda vec: -vec[1] - 512, '<=')    # y >= -512
+        Constraints(lambda vec: vec[1] + 512, '>=')    # y >= -512
     ]
 
-    holder_table_constraints = [
-        Constraints(lambda vec: vec[0] - 10, "<="),    # x <= 10
-        Constraints(lambda vec: -vec[0] - 10, '<='),   # x >= -10
-        Constraints(lambda vec: vec[1] - 10, '<='),    # y <= 10
-        Constraints(lambda vec: -vec[1] - 10, '<=')    # y >= -10
-    ]
+    def eggholder(v):
+        x, y = v[0], v[1]
+        return -(y + 47) * np.sin(np.sqrt(abs(x / 2 + (y + 47)))) - x * np.sin(np.sqrt(abs(x - (y + 47))))
+    egg_holder_function = FitnessFunc(eggholder)
 
+    diffEvol = DifferentialEvolution(20, 50, 2, egg_holder_function, egg_holder_constraints, K=0.5)
+    diffEvol.run()
 
-    trial_cand = Candidates(vector=np.array([1, 2, 3, 4]))
-    mut_cand = Candidates(vector=np.array([2, 3, 4, 512]))
-
-    de = DifferentialEvolution(0, 1, 4, None, [])
-
-    de.trialVectorGeneration(trial_cand, mut_cand)
+    sol = diffEvol.global_bests[-1]
+    print(sol[0], sol[1].vector)

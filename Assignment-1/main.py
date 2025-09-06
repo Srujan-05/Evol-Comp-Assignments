@@ -6,8 +6,13 @@ if __name__ == "__main__":
     populations = [20, 50, 100, 200]
     generations = [50, 200]
 
-    eggfunc = lambda x: -(x[1]+47)*np.sin((np.mod((x[0]/2)+(x[1]+47))**0.5))-x[0]*np.sin((np.mod(x[0]+(x[1]+47))**0.5))
-    egg_holder_function = FitnessFunc(eggfunc)
+
+    def eggholder(v):
+        x, y = v[0], v[1]
+        return -(y + 47) * np.sin(np.sqrt(abs(x / 2 + (y + 47)))) - x * np.sin(np.sqrt(abs(x - (y + 47))))
+
+
+    egg_holder_function = FitnessFunc(eggholder)
 
     constraint1 = Constraints(lambda x: x[0] - 512, '<')
     constraint2 = Constraints(lambda x: x[1] - 512, '<')
@@ -20,3 +25,4 @@ if __name__ == "__main__":
         for generation in generations:
             diffEvol = DifferentialEvolution(population, generation, 2, egg_holder_function, constraints)
             diffEvol.run()
+            sol = diffEvol.global_bests[-1]
