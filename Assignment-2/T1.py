@@ -43,11 +43,15 @@ class Normalization:
 
 
 class FuzzyLogic:
-    def __init__(self, input_data: np.array, input_fuzzy_maps: list, output_fuzzy_map: FuzzyMap, fam: np.array):
+    def __init__(self, input_data: np.array, input_ranges: list, input_fuzzy_maps: list, output_fuzzy_map: FuzzyMap, fam: np.array):
         self.input_data = input_data
         self.input_fuzzy_maps = input_fuzzy_maps
         self.output_fuzzy_maps = output_fuzzy_map
         self.fam = fam
+        self.input_ranges = input_ranges
+
+    def solve(self):
+        pass
 
 
 if __name__ == "__main__":
