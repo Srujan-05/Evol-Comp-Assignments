@@ -7,14 +7,12 @@ class FuzzyMap:
         self.bins = len(centroids) if bins is None else bins
         self.centroids = centroids if centroids is not None else np.linspace(-1, 1, bins)
 
-    def mu(self, x: int) -> np.array:
+    def mu(self, x: float) -> np.array:
         belonging = [0 for i in range(self.bins)]
         if x <= self.centroids[0]:
             belonging[0] = 1/(self.centroids[0] + 1) * (x + 1)
-            belonging = [1-belonging[0]] + belonging + [0]
         elif x >= self.centroids[-1]:
             belonging[-1] = 1 / (self.centroids[-1] - 1) * (x - 1)
-            belonging = [0] + belonging + [1 - belonging[-1]]
         else:
             for i in range(1, self.bins):
                 if self.centroids[i - 1] <= x <= self.centroids[i]:
@@ -22,12 +20,10 @@ class FuzzyMap:
                     belonging[i-1] = 1 - belonging[i]
                     break
 
-            belonging = [0] + belonging + [0]
-
         return np.array(belonging)
 
     def defuzzify(self, belong: np.array):
-        return (belong[0]*-1 + np.dot(belong[1:-1], self.centroids) + belong[-1] * 1)/np.sum(belong)
+        return np.dot(belong, self.centroids)/np.sum(belong)
 
 
 class Normalization:
@@ -56,7 +52,7 @@ class FuzzyLogic:
 
 if __name__ == "__main__":
     fm = FuzzyMap(None, np.array([-0.66, -0.33, 0, 0.15, 0.33, 0.45, 0.75]))
-    belong = fm.mu(1)
+    belong = fm.mu(0.9)
     defuz = fm.defuzzify(belong)
     print(belong, defuz)
 
