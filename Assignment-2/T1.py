@@ -89,12 +89,12 @@ class FuzzyLogic:
 
 if __name__ == "__main__":
     fm = FuzzyMap(None, np.array([-0.66, -0.33, 0, 0.15, 0.33, 0.45, 0.75]))
-    belong = fm.mu(0.9)
+    belong = fm.mu(0)
     defuz = fm.defuzzify(belong)
     print(belong, defuz)
 
     nm = Normalization(-30, 30)
-    normVal = nm.normalize(0.1)
+    normVal = nm.normalize(29)
     print("normalized: ", normVal)
     denormVal = nm.denormalize(normVal)
     print("denormalized: ", denormVal)
