@@ -39,13 +39,15 @@ class Normalization:
 
 
 class FuzzyLogic:
-    def __init__(self, input_data: np.array, input_ranges: list, input_fuzzy_maps: list, output_fuzzy_map: FuzzyMap, fam: np.array):
+    def __init__(self, input_data: np.array, input_ranges: list, input_fuzzy_maps: list, output_fuzzy_map: FuzzyMap, output_ranges: tuple, fam: np.array):
         self.input_data = input_data
         self.input_fuzzy_maps = input_fuzzy_maps
         self.output_fuzzy_map = output_fuzzy_map
         self.fam = fam
         self.input_ranges = input_ranges
-        self.normalizers = [Normalization(range[0], range[1]) for range in input_ranges]
+        self.output_ranges = output_ranges
+        self.input_normalizers = [Normalization(range[0], range[1]) for range in input_ranges]
+        self.output_normalizer = Normalization(self.output_ranges[0], self.output_ranges[1])
 
     def solve(self):
         normalized_outputs = []
@@ -54,7 +56,7 @@ class FuzzyLogic:
         for input_data in input_list:
             normalized_inputs = []
             for i, data in enumerate(input_data):
-                norm_data = self.normalizers[i].normalize(data)
+                norm_data = self.input_normalizers[i].normalize(data)
                 normalized_inputs.append(norm_data)
             
             input_memberships = []
@@ -83,8 +85,10 @@ class FuzzyLogic:
             normalized_output = numerator / denominator if denominator != 0 else 0.0
             normalized_outputs.append(normalized_output)
 
-        return normalized_outputs
-
+        denormalized_outputs = []
+        for nout in normalized_outputs:
+               denormalized_outputs.append(self.output_normalizer.denormalize(nout))
+        return denormalized_outputs
 
 
 if __name__ == "__main__":
@@ -99,3 +103,25 @@ if __name__ == "__main__":
     denormVal = nm.denormalize(normVal)
     print("denormalized: ", denormVal)
 
+    input = np.array([[-3, -10]])
+
+    input_ranges = [(-10, 10), (-30, 30)]
+
+    inpFm1 = FuzzyMap(None, np.array([-0.66, -0.33, 0, 0.15, 0.33, 0.45, 0.75]))
+    inpFm2 = FuzzyMap(None, np.array([-0.66, -0.33, 0, 0.15, 0.33, 0.45, 0.75]))
+
+    outFm = FuzzyMap(None, np.array([-0.75, 0, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.95]))
+
+    outRange = (0, 100)
+
+    fam = np.array([[1, 1, 1, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 1, 1, 2],
+                    [1, 1, 1, 1, 1, 1, 3],
+                    [1, 1, 1, 1, 2, 3, 5],
+                    [1, 1, 1, 2, 2, 4, 6],
+                    [1, 1, 2, 3, 4, 6, 8],
+                    [1, 2, 3, 5, 6, 8, 9]])
+
+    fzl = FuzzyLogic(input, input_ranges, [inpFm1, inpFm2], outFm, outRange, fam)
+    ans = fzl.solve()
+    print(ans)
