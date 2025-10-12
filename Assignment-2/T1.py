@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def save_csv(output_data, file_name):
+    pass
+
+
 class FuzzyMap:
     def __init__(self, bins, centroids: np.array):
         self.bins = len(centroids) if bins is None else bins
@@ -92,18 +96,8 @@ class FuzzyLogic:
 
 
 if __name__ == "__main__":
-    fm = FuzzyMap(None, np.array([-0.66, -0.33, 0, 0.15, 0.33, 0.45, 0.75]))
-    belong = fm.mu(0)
-    defuz = fm.defuzzify(belong)
-    print(belong, defuz)
-
-    nm = Normalization(-30, 30)
-    normVal = nm.normalize(29)
-    print("normalized: ", normVal)
-    denormVal = nm.denormalize(normVal)
-    print("denormalized: ", denormVal)
-
-    input = np.array([[-3, -10]])
+    input_file_path = "input.csv"
+    input_data = np.loadtxt(input_file_path, delimiter=',', skiprows=1, usecols=(1, 2))
 
     input_ranges = [(-10, 10), (-30, 30)]
 
@@ -122,6 +116,7 @@ if __name__ == "__main__":
                     [1, 1, 2, 3, 4, 6, 8],
                     [1, 2, 3, 5, 6, 8, 9]])
 
-    fzl = FuzzyLogic(input, input_ranges, [inpFm1, inpFm2], outFm, outRange, fam)
-    ans = fzl.solve()
-    print(ans)
+    fzl = FuzzyLogic(input_data, input_ranges, [inpFm1, inpFm2], outFm, outRange, fam)
+    output = fzl.solve()
+
+    save_csv(output, "output.csv")
