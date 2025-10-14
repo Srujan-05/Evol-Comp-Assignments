@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 def save_csv(output_data, file_name):
     import csv
 
-    input_file_path = "input.csv"
+    input_file_path = "input.csv"  # same file read above
 
+    # Read the original input CSV
     with open(input_file_path, newline="", encoding="utf-8") as f:
         reader = list(csv.reader(f))
         if not reader:
@@ -14,19 +15,22 @@ def save_csv(output_data, file_name):
         header = reader[0]
         rows = reader[1:]
 
+    # Check that the output length matches input length
     if len(rows) != len(output_data):
         raise ValueError(
             f"Row count mismatch: input has {len(rows)} data rows, but got {len(output_data)} outputs."
         )
 
-    out_header = header[:]
-    if "Breakoutability" not in out_header:
-        out_header.append("Breakoutability")
+    # Keep only first column (case number) and add Breakoutability
+    case_col_name = header[0] if header else "Case"
+    out_header = [case_col_name, "Breakoutability"]
 
     out_rows = []
     for r, y in zip(rows, output_data):
-        out_rows.append(r + [round(float(y), 4)])
+        case_id = r[0] if r else ""
+        out_rows.append([case_id, round(float(y), 4)])
 
+    # Write to output.csv
     with open(file_name, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(out_header)
