@@ -45,9 +45,9 @@ class FuzzyMap:
     def mu(self, x: float) -> np.array:
         belonging = [0 for i in range(self.bins)]
         if x <= self.centroids[0]:
-            belonging[0] = 1/(self.centroids[0] + 1) * (x + 1)
+            belonging[0] = 1
         elif x >= self.centroids[-1]:
-            belonging[-1] = 1 / (self.centroids[-1] - 1) * (x - 1)
+            belonging[-1] = 1
         else:
             for i in range(1, self.bins):
                 if self.centroids[i - 1] <= x <= self.centroids[i]:
