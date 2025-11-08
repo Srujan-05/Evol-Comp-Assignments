@@ -66,21 +66,37 @@ class FuzzyCMeans:
     def compute_fuzzy_partition_matrix(self, squared_distances):
         U = np.zeros((squared_distances.shape[0], squared_distances.shape[1]))
         for i in range(squared_distances.shape[1]):
+            flag = 0
             for j in range(squared_distances.shape[0]):
                 if squared_distances[j][i] == 0:
                     U[:, i] = 0
                     U[j][i] = 1
+                    flag = 1
                     break
-                else:
+            if flag != 1:
+                for j in range(squared_distances.shape[0]):
                     U[j][i] = 1/((np.sum(squared_distances[j][i]/squared_distances[:, i]))**(1/(self.m-1)))
         return U
 
 
-    def optimize_c_value(self) -> int:
-        pass
+    def optimize_c_value(self, c_min=2, c_max=10) -> int:
+        J = {}
+        for k in range(c_min, c_max + 1):
+            centroids, obj_val, _ = self.train(k)
+            J[k] = obj_val
+
+        ratios = {}
+        for k in range(c_min + 1, c_max):
+            num = abs(J[k] - J[k + 1])
+            den = abs(J[k - 1] - J[k])
+            ratios[k] = num / den if den != 0 else np.inf
+
+        optimal_c = min(ratios, key=ratios.get)
+        return optimal_c
 
 
 if __name__ == "__main__":
     cmeans = FuzzyCMeans(np.array([[1, 2], [2, 3], [2, 4], [5, 6], [6, 7]]), 3)
     cb, _ = cmeans.test(np.array([[1, 0], [4, 5], [5, 4], [6, 10]]))
-    print(cb, _)
+    c = cmeans.optimize_c_value()
+    print(c)
