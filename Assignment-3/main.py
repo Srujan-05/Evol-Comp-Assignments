@@ -17,7 +17,7 @@ for c in range(2, 11):
     iterations.append(10) 
 
 export_jc_iterations_to_excel(c_values, jc_values, iterations)
-print("\n✅ CSV export complete! Check 'jc_iterations.csv' in your Assignment-3 folder.\n")
+print("\n CSV export complete! Check 'jc_iterations.csv' in your Assignment-3 folder.\n")
 
 
 best_c = c_values[np.argmin(jc_values)]
