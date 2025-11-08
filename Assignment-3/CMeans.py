@@ -19,6 +19,9 @@ class FuzzyCMeans:
         self.m = m
         self.training_data = input_data
         self.epsilon = epsilon
+        self.U_matrix = None
+        self.iterations_count = 0
+
         if c is None:
             optimal_c = self.optimize_c_value()
             self.cluster_centroids, self.obj_func, self.centroid_belongingness = self.train(optimal_c)
@@ -30,12 +33,19 @@ class FuzzyCMeans:
         U_curr = self.initialize_fuzzy_partition_matrix(c)
         centroids = self.compute_centroids(U_curr)
         squared_distances = self.calculate_distances(self.training_data, centroids)
-        while U_prev is None or np.linalg.norm(U_prev - U_curr) >= self.epsilon:
+
+        self.iterations_count = 0
+        while U_prev is None or np.linalg.norm(U_prev - U_curr)>= self.epsilon:
             U_prev = U_curr
             U_curr = self.compute_fuzzy_partition_matrix(squared_distances)
             centroids = self.compute_centroids(U_curr)
             squared_distances = self.calculate_distances(self.training_data, centroids)
+            self.iterations_count += 1
 
+            if self.iterations_count > 1000:
+                break
+
+        self.U_matrix = U_curr
         objective_val = np.sum(np.multiply(U_curr**self.m, squared_distances))
         centroid_belongingness = [np.argmax(U_curr[:, i]) for i in range(self.training_data.shape[0])]
         return centroids, objective_val, centroid_belongingness
@@ -45,7 +55,7 @@ class FuzzyCMeans:
         U = self.compute_fuzzy_partition_matrix(squared_distances)
         objective_val = np.sum(np.multiply(U ** self.m, squared_distances))
         centroid_belongingness = [np.argmax(U[:, i]) for i in range(test_data.shape[0])]
-        return centroid_belongingness, objective_val
+        return centroid_belongingness, objective_val, U
 
     def calculate_distances(self, data, centroids):
         squared_distances = []
@@ -81,16 +91,20 @@ class FuzzyCMeans:
 
     def optimize_c_value(self, c_min=2, c_max=10) -> int:
         J = {}
+        iteration_counts = {}
         for k in range(c_min, c_max + 1):
             centroids, obj_val, _ = self.train(k)
             J[k] = obj_val
 
         ratios = {}
-        for k in range(c_min + 1, c_max):
-            num = abs(J[k] - J[k + 1])
-            den = abs(J[k - 1] - J[k])
-            ratios[k] = num / den if den != 0 else np.inf
-
+        for k in range(3, 10):
+            if k-1 in J and k in J and k+1 in J:
+                num = abs(J[k] - J[k + 1])
+                den = abs(J[k - 1] - J[k])
+                ratios[k] = num / den if den != 0 else np.inf
+            else:
+                ratios[k] = np.inf
+    
         optimal_c = min(ratios, key=ratios.get)
         return optimal_c
 

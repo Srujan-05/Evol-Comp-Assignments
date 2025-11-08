@@ -29,6 +29,9 @@ def load_dataset_from_csv(file_path: str, train_ratio: float = None, test_ratio:
         else:
             i += 1
 
+    if train_ratio == 0.8 and test_ratio is None:  
+        return load_interspersed_data(data, total_samples)
+
     # Handle sample-based splitting
     if train_samples or test_samples:
         if train_samples:
@@ -54,6 +57,45 @@ def load_dataset_from_csv(file_path: str, train_ratio: float = None, test_ratio:
         train_count = int(0.75 * total_samples)
         train_data = data[:train_count]
         test_data = data[train_count:]
+
+    return train_data, test_data
+
+def load_interspersed_data(data, total_samples, data_set_number=5):
+    """
+    Implement 4:1 interspersed splitting as per assignment 
+    For every 5 points, take first 4 for training, 1 for testing
+    """
+    if data_set_number == 2:
+        # For Data Set 2: first 600 points with 4:1 split, last 20 for testing
+        main_data = data[:600]
+        extra_test_data = data[600:620]
+        
+        train_indices = []
+        test_indices = []
+        
+        # 4:1 split for first 600 points
+        for i in range(0, 600, 5):
+            train_indices.extend(range(i, i+4))
+            test_indices.append(i+4)
+            
+        train_data = main_data[train_indices]  # 480 points
+        test_data_main = main_data[test_indices]  # 120 points
+        test_data = np.vstack([test_data_main, extra_test_data])  # 140 points
+        
+    else:
+        # For Data Set 5: standard 4:1 split
+        train_indices = []
+        test_indices = []
+        
+        for i in range(0, total_samples, 5):
+            train_end = min(i+4, total_samples)
+            train_indices.extend(range(i, train_end))
+            
+            if i+4 < total_samples:
+                test_indices.append(i+4)
+        
+        train_data = data[train_indices]
+        test_data = data[test_indices]
 
     return train_data, test_data
 
@@ -120,7 +162,10 @@ def export_cluster_file(U_matrix, data, filename="C_output.csv"):
     x, y, cluster_id  (cluster_id from 0 to c-1)
     """
 
-    cluster_ids = np.argmax(U_matrix, axis=0)
+    if hasattr(U_matrix, 'shape') and len(U_matrix.shape) == 2:
+        cluster_ids = np.argmax(U_matrix, axis=0)
+    else:
+        cluster_ids = U_matrix
 
     x = data[:, 0]
     y = data[:, 1]
@@ -138,8 +183,12 @@ def plot_final_clusters(train_data, U_matrix, title="Final Cluster Illustration"
     """
     Plots the clustered data points in 2D, where each cluster is shown in a unique color.
     """
-    cluster_ids = np.argmax(U_matrix, axis=0)
-    num_clusters = U_matrix.shape[0]
+    if hasattr(U_matrix, 'shape') and len(U_matrix.shape) == 2:
+        cluster_ids = np.argmax(U_matrix, axis=0)
+        num_clusters = U_matrix.shape[0]
+    else:
+        cluster_ids = U_matrix
+        num_clusters = len(np.unique(U_matrix))
 
     plt.figure(figsize=(8, 6))
     colors = plt.cm.tab10(np.linspace(0, 1, num_clusters))
