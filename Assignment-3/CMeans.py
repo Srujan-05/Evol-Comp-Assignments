@@ -20,42 +20,41 @@ class FuzzyCMeans:
         self.training_data = input_data
         self.epsilon = epsilon
         self.U_matrix = None
-        self.iterations_count = 0
+        self.cluster_centroids, self.obj_func, self.centroid_classification, self.iterations = None, None, None, None
 
+        # if c is None:
+        #     optimal_c, objective_values, iters = self.optimize_c_value()
+        #     self.cluster_centroids, self.obj_func, self.centroid_classification, iterations = self.train(optimal_c)
+        # else:
+        #     self.cluster_centroids, self.obj_func, self.centroid_classification, iterations = self.train(self.c)
+
+    def train(self, c= None):
         if c is None:
-            optimal_c = self.optimize_c_value()
-            self.cluster_centroids, self.obj_func, self.centroid_belongingness = self.train(optimal_c)
-        else:
-            self.cluster_centroids, self.obj_func, self.centroid_belongingness = self.train(self.c)
-
-    def train(self, c):
+            c = self.c
         U_prev, U_curr = None, None
         U_curr = self.initialize_fuzzy_partition_matrix(c)
         centroids = self.compute_centroids(U_curr)
         squared_distances = self.calculate_distances(self.training_data, centroids)
-
-        self.iterations_count = 0
+        iterations = 0
         while U_prev is None or np.linalg.norm(U_prev - U_curr)>= self.epsilon:
             U_prev = U_curr
             U_curr = self.compute_fuzzy_partition_matrix(squared_distances)
             centroids = self.compute_centroids(U_curr)
             squared_distances = self.calculate_distances(self.training_data, centroids)
-            self.iterations_count += 1
-
-            if self.iterations_count > 1000:
-                break
+            iterations += 1
 
         self.U_matrix = U_curr
         objective_val = np.sum(np.multiply(U_curr**self.m, squared_distances))
-        centroid_belongingness = [np.argmax(U_curr[:, i]) for i in range(self.training_data.shape[0])]
-        return centroids, objective_val, centroid_belongingness
+        centroid_classification = np.array([np.argmax(U_curr[:, i]) for i in range(self.training_data.shape[0])])
+        self.cluster_centroids, self.obj_func, self.centroid_classification, self.iterations = centroids, objective_val, centroid_classification, iterations
+        return centroids, objective_val, centroid_classification, iterations
 
     def test(self, test_data):
         squared_distances = self.calculate_distances(test_data, self.cluster_centroids)
         U = self.compute_fuzzy_partition_matrix(squared_distances)
         objective_val = np.sum(np.multiply(U ** self.m, squared_distances))
-        centroid_belongingness = [np.argmax(U[:, i]) for i in range(test_data.shape[0])]
-        return centroid_belongingness, objective_val, U
+        centroid_classification = np.array([np.argmax(U[:, i]) for i in range(test_data.shape[0])])
+        return centroid_classification, objective_val
 
     def calculate_distances(self, data, centroids):
         squared_distances = []
@@ -89,15 +88,15 @@ class FuzzyCMeans:
         return U
 
 
-    def optimize_c_value(self, c_min=2, c_max=10) -> int:
+    def optimize_c_value(self, c_min=2, c_max=10):
         J = {}
-        iteration_counts = {}
+        iters = {}
         for k in range(c_min, c_max + 1):
-            centroids, obj_val, _ = self.train(k)
+            centroids, obj_val, _, iters[k] = self.train(k)
             J[k] = obj_val
 
         ratios = {}
-        for k in range(3, 10):
+        for k in range(c_min, c_max):
             if k-1 in J and k in J and k+1 in J:
                 num = abs(J[k] - J[k + 1])
                 den = abs(J[k - 1] - J[k])
@@ -106,7 +105,7 @@ class FuzzyCMeans:
                 ratios[k] = np.inf
     
         optimal_c = min(ratios, key=ratios.get)
-        return optimal_c
+        return optimal_c, J, ratios, iters
 
 
 if __name__ == "__main__":

@@ -25,44 +25,48 @@ def main_development():
     train_data, test_data = load_dataset_from_csv("data/Dataset-5.csv", train_ratio=0.8)
     print(f"Training data: {train_data.shape}, Testing data: {test_data.shape}")
     
-    c_values = list(range(2, 11))
-    jc_values = []
-    iterations_list = []
-    
-    print("\nTesting cluster counts from 2 to 10:")
-    for c in c_values:
-        print(f"  c = {c}...", end=" ")
-        cmeans = FuzzyCMeans(train_data, c=c, m=2, epsilon=0.001)
-        jc_values.append(cmeans.obj_func)
-        iterations_list.append(cmeans.iterations_count)
-        print(f"Jc = {cmeans.obj_func:.2f}, Iterations = {cmeans.iterations_count}")
-    
-    ratios = calculate_rc_ratios(c_values, jc_values)
-    
+    c_min, c_max = 2, 10
+    c_values = list(range(c_min, c_max+1))
+    # jc_values = []
+    # iterations_list = []
+    #
+    # print("\nTesting cluster counts from 2 to 10:")
+    # for c in c_values:
+    #     print(f"  c = {c}...", end=" ")
+    #     cmeans = FuzzyCMeans(train_data, c=c, m=2, epsilon=0.001)
+    #     centroids, obj_func, centroid_ids, iterations_count = cmeans.train(c)
+    #     jc_values.append(obj_func)
+    #     iterations_list.append(iterations_count)
+    #     print(f"Jc = {obj_func:.2f}, Iterations = {iterations_count}")
+
+    cmeans = FuzzyCMeans(train_data, m=2, epsilon=0.001)
+    optimal_c, jc_values, ratios, iterations_list = cmeans.optimize_c_value(c_min, c_max)
+    jc_values = [jc_values[c] for c in range(c_min, c_max)]
+    iterations_list = [iterations_list[c] for c in range(c_min, c_max)]
+
     print(f"\nRc Ratios (c from 3 to 9):")
-    for c in range(3, 10):
+    for c in range(c_min+1, c_max):
         print(f"  c={c}: Rc = {ratios[c]:.4f}")
     
     # Find optimal c (minimum Rc ratio)
-    optimal_c = min(ratios, key=ratios.get)
     print(f"\nOptimal c: {optimal_c} (minimum Rc = {ratios[optimal_c]:.4f})")
     
     # Train final model with optimal c
     print(f"\nTraining final model with optimal c = {optimal_c}")
     final_model = FuzzyCMeans(train_data, c=optimal_c, m=2, epsilon=0.001)
+    cluster_centroids, jc_value, cluster_ids, iters = final_model.train()
     
     # Export Jc vs Iterations to Excel
     export_jc_iterations_to_excel(c_values, jc_values, iterations_list, "jc_iterations_dev.xlsx")
     
     # Create file C with cluster assignments 
-    cluster_ids = np.argmax(final_model.U_matrix, axis=0)
-    export_cluster_file(final_model.U_matrix, train_data, "C_output_dev.csv")
+    export_cluster_file(train_data, cluster_ids, "C_output_dev.csv")
     
     # Plot final clusters
-    plot_final_clusters(train_data, final_model.U_matrix, "Data Set 5 - Final Clusters (Training Data)")
+    plot_final_clusters(train_data, cluster_ids, final_model.c, "Data Set 5 - Final Clusters (Training Data)")
     
     # Save centroids for classification
-    np.savetxt("centroids_dev.csv", final_model.cluster_centroids, delimiter=',')
+    np.savetxt("centroids_dev.csv", cluster_centroids, delimiter=',')
     print("Centroids saved to centroids_dev.csv")
     
     # CLASSIFICATION 
@@ -70,9 +74,9 @@ def main_development():
     print("CLASSIFICATION  - Testing Data")
     print("=" * 50)
     
-    test_cluster_ids, test_jc, test_U = final_model.test(test_data)    
-    export_cluster_file(test_U, test_data, "C_test_output_dev.csv")
-    plot_final_clusters(test_data, test_U, "Data Set 5 - Classified Test Data")
+    test_cluster_ids, test_jc = final_model.test(test_data)
+    export_cluster_file(test_data, test_cluster_ids, "C_test_output_dev.csv")
+    plot_final_clusters(test_data, test_cluster_ids, final_model.c, "Data Set 5 - Classified Test Data")
 
     print("Classification completed successfully!")
     return final_model
@@ -128,4 +132,4 @@ def main_submission():
 
 if __name__ == "__main__":
     main_development()
-    main_submission()
+    # main_submission()

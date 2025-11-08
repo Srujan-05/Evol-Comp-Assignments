@@ -156,16 +156,11 @@ def export_jc_iterations_to_excel(c_values, jc_values, iterations, filename="jc_
     print(f"[+] Exported Excel file with embedded chart → '{filename}' successfully!")
 
 
-def export_cluster_file(U_matrix, data, filename="C_output.csv"):
+def export_cluster_file(data, cluster_ids, filename="C_output.csv"):
     """
     Creates a file with 3 columns:
     x, y, cluster_id  (cluster_id from 0 to c-1)
     """
-
-    if hasattr(U_matrix, 'shape') and len(U_matrix.shape) == 2:
-        cluster_ids = np.argmax(U_matrix, axis=0)
-    else:
-        cluster_ids = U_matrix
 
     x = data[:, 0]
     y = data[:, 1]
@@ -179,23 +174,16 @@ def export_cluster_file(U_matrix, data, filename="C_output.csv"):
     print(f"[+] Exported cluster assignments to '{filename}' successfully!")
 
 
-def plot_final_clusters(train_data, U_matrix, title="Final Cluster Illustration"):
+def plot_final_clusters(train_data, cluster_ids, num_clusters, title="Final Cluster Illustration"):
     """
     Plots the clustered data points in 2D, where each cluster is shown in a unique color.
     """
-    if hasattr(U_matrix, 'shape') and len(U_matrix.shape) == 2:
-        cluster_ids = np.argmax(U_matrix, axis=0)
-        num_clusters = U_matrix.shape[0]
-    else:
-        cluster_ids = U_matrix
-        num_clusters = len(np.unique(U_matrix))
-
     plt.figure(figsize=(8, 6))
     colors = plt.cm.tab10(np.linspace(0, 1, num_clusters))
 
     for k in range(num_clusters):
         cluster_points = train_data[cluster_ids == k]
-        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], 
+        plt.scatter(cluster_points[:, 0], cluster_points[:, 1],
                     color=colors[k], label=f"Cluster {k+1}", s=30)
 
     plt.title(title)
