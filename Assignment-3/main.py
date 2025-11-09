@@ -1,5 +1,5 @@
 from CMeans import FuzzyCMeans
-from utils import load_dataset_from_csv, export_jc_iterations_to_excel, export_cluster_file, plot_final_clusters, load_interspersed_data
+from utils import load_dataset_from_csv, plot_jc_iterations, export_cluster_file, plot_final_clusters, load_interspersed_data
 import numpy as np
 
 def main_development():
@@ -30,27 +30,14 @@ def main_development():
     # Train final model with optimal c
     final_model = FuzzyCMeans(train_data, c=optimal_c, m=2, epsilon=0.001, auto_train=True)
     
-    export_jc_iterations_to_excel(c_values, jc_values, iterations_list, "jc_iterations_dev.xlsx")
+    plot_jc_iterations(c_values, jc_values, iterations_list, "jc_iterations_dev")
     export_cluster_file(train_data, final_model.centroid_classification, "C_output_dev.csv")
 
     # Changes made: now explicitly passes centroids and title
-    plot_final_clusters(
-        train_data,
-        final_model.centroid_classification,
-        final_model.c,
-        centroids=final_model.cluster_centroids,
-        title="Data Set 5 - Final Clusters (Training Data)"
-    )
+    plot_final_clusters(train_data, final_model.centroid_classification, final_model.c, centroids=final_model.cluster_centroids, title="Data Set 5 - Final Clusters (Training Data)")
 
     # Changes made: Now saves proper centroid coordinates, not cluster assignments
-    np.savetxt(
-        "centroids_dev.csv",
-        final_model.cluster_centroids,
-        delimiter=",",
-        fmt="%.6f",
-        header="x,y",
-        comments=""
-    )
+    np.savetxt("centroids_dev.csv", final_model.cluster_centroids, delimiter=",", fmt="%.6f", header="x,y", comments="")
     print("Centroids saved to centroids_dev.csv")
     
     # CLASSIFICATION 
@@ -62,13 +49,7 @@ def main_development():
     export_cluster_file(test_data, test_cluster_ids, "C_test_output_dev.csv")
 
     # Changes made: now passes centroids and title correctly again
-    plot_final_clusters(
-        test_data,
-        test_cluster_ids,
-        final_model.c,
-        centroids=final_model.cluster_centroids,
-        title="Data Set 5 - Classified Test Data"
-    )
+    plot_final_clusters(test_data, test_cluster_ids, final_model.c, centroids=final_model.cluster_centroids, title="Data Set 5 - Classified Test Data")
 
     print("Classification completed successfully!")
     return final_model
@@ -80,7 +61,7 @@ def main_submission():
     print("=" * 60)
     
     # Load Data Set 2 
-    train_data, test_data = load_dataset_from_csv("data/Dataset-2.csv", train_ratio=0.8)
+    train_data, test_data = load_interspersed_data("data/Dataset-2.csv", data_set_number=2)
     print(f"Training data: {train_data.shape} (480 points)")
     print(f"Testing data: {test_data.shape} (140 points)")
     
@@ -102,7 +83,7 @@ def main_submission():
         if c in ratios_dict:
             print(f"  c={c}: Rc = {ratios_dict[c]:.4f}")
     
-    export_jc_iterations_to_excel(c_values, jc_values, iterations_list, "jc_iterations_submission.xlsx")
+    plot_jc_iterations(c_values, jc_values, iterations_list, "jc_iterations_submission")
 
     #get the final model with optimal c
     print(f"\nUsing optimal model with c = {optimal_c}")
@@ -114,7 +95,7 @@ def main_submission():
     
     # Export cluster assignments and plot final clusters for 140 test points
     export_cluster_file(test_data, test_cluster_ids, "C_output_submission.csv")
-    plot_final_clusters(test_data, test_cluster_ids, final_model.c, "Data Set 2 - Final Clusters (140 Test Points)")    
+    plot_final_clusters(test_data, test_cluster_ids, final_model.c, centroids=final_model.cluster_centroids, title="Data Set 2 - Final Clusters (140 Test Points)")
     np.savetxt("centroids_submission.csv", final_model.cluster_centroids, delimiter=',')
     
     print("\n" + "=" * 50)
@@ -126,5 +107,5 @@ def main_submission():
     print("=" * 50)
 
 if __name__ == "__main__":
-    main_development()
-    # main_submission()
+    # main_development()
+    main_submission()
