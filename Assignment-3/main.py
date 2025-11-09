@@ -26,18 +26,6 @@ def main_development():
     print(f"Training data: {train_data.shape}, Testing data: {test_data.shape}")
     
     c_min, c_max = 2, 10
-    # jc_values = []
-    # iterations_list = []
-    #
-    # print("\nTesting cluster counts from 2 to 10:")
-    # for c in c_values:
-    #     print(f"  c = {c}...", end=" ")
-    #     cmeans = FuzzyCMeans(train_data, c=c, m=2, epsilon=0.001)
-    #     centroids, obj_func, centroid_ids, iterations_count = cmeans.train(c)
-    #     jc_values.append(obj_func)
-    #     iterations_list.append(iterations_count)
-    #     print(f"Jc = {obj_func:.2f}, Iterations = {iterations_count}")
-
     cmeans = FuzzyCMeans(train_data, c=None, m=2, epsilon=0.001, auto_train=False)
     optimal_c, jc_values_dict, ratios_dict, iterations_dict = cmeans.optimize_c_value(c_min, c_max)
 
