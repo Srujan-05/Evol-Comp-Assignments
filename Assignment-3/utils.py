@@ -40,7 +40,16 @@ def load_dataset_from_csv(file_path: str, train_ratio: float = None, test_ratio:
         test_data = data[train_count:]
     return train_data, test_data
 
-def load_interspersed_data(data, total_samples, data_set_number=5):
+def load_interspersed_data(file_path, data_set_number=5):
+    df = pd.read_csv(file_path)
+    data = np.array(df)
+    total_samples = len(data)
+    i = 0
+    while i < data.shape[1]:
+        if np.isnan(data[:, i]).all():
+            data = np.delete(data, i, axis=1)
+        else:
+            i += 1
     if data_set_number == 2:
         main_data = data[:600]
         extra_test_data = data[600:620]
