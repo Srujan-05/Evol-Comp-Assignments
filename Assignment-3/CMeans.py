@@ -2,7 +2,7 @@ import numpy as np
 
 
 class FuzzyCMeans:
-    def __init__(self, input_data:np.array, c=None, m=2, A=None, epsilon=1e-3):
+    def __init__(self, input_data:np.array, c=None, m=2, A=None, epsilon=1e-3, auto_train=True):
         """
         :param input_data: training data of size Nxn where N is number of samples and n is dimension
                             of each sample vector.
@@ -22,11 +22,12 @@ class FuzzyCMeans:
         self.U_matrix = None
         self.cluster_centroids, self.obj_func, self.centroid_classification, self.iterations = None, None, None, None
 
-        # if c is None:
-        #     optimal_c, objective_values, iters = self.optimize_c_value()
-        #     self.cluster_centroids, self.obj_func, self.centroid_classification, iterations = self.train(optimal_c)
-        # else:
-        #     self.cluster_centroids, self.obj_func, self.centroid_classification, iterations = self.train(self.c)
+        if auto_train:
+            if c is None:
+                self.c, objective_values, iters, ratios = self.optimize_c_value()
+                self.cluster_centroids, self.obj_func, self.centroid_classification, iterations = self.train(optimal_c)
+            else:
+                self.cluster_centroids, self.obj_func, self.centroid_classification, iterations = self.train(self.c)
 
     def train(self, c= None):
         if c is None:
