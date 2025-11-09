@@ -2,20 +2,6 @@ from CMeans import FuzzyCMeans
 from utils import load_dataset_from_csv, export_jc_iterations_to_excel, export_cluster_file, plot_final_clusters
 import numpy as np
 
-'''def calculate_rc_ratios(c_values, jc_values):
-    ratios = {}
-    jc_dict = dict(zip(c_values, jc_values))
-    
-    for c in range(3, 10):  
-        if c-1 in jc_dict and c in jc_dict and c+1 in jc_dict:
-            numerator = abs(jc_dict[c] - jc_dict[c+1])
-            denominator = abs(jc_dict[c-1] - jc_dict[c])
-            ratios[c] = numerator / denominator if denominator != 0 else np.inf
-        else:
-            ratios[c] = np.inf
-    
-    return ratios'''
-
 def main_development():
     """Run on Data Set 5 for development"""
     print("=" * 60)
@@ -105,7 +91,7 @@ def main_submission():
     
     # Export cluster assignments and plot final clusters for 140 test points
     export_cluster_file(test_data, test_cluster_ids, "C_output_submission.csv")
-    plot_final_clusters(test_data, test_cluster_ids, "Data Set 2 - Final Clusters (140 Test Points)")    
+    plot_final_clusters(test_data, test_cluster_ids, final_model.c, "Data Set 2 - Final Clusters (140 Test Points)")    
     np.savetxt("centroids_submission.csv", final_model.cluster_centroids, delimiter=',')
     
     print("\n" + "=" * 50)
