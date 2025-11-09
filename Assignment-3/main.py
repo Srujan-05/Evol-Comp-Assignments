@@ -2,7 +2,7 @@ from CMeans import FuzzyCMeans
 from utils import load_dataset_from_csv, export_jc_iterations_to_excel, export_cluster_file, plot_final_clusters
 import numpy as np
 
-def calculate_rc_ratios(c_values, jc_values):
+'''def calculate_rc_ratios(c_values, jc_values):
     ratios = {}
     jc_dict = dict(zip(c_values, jc_values))
     
@@ -14,7 +14,7 @@ def calculate_rc_ratios(c_values, jc_values):
         else:
             ratios[c] = np.inf
     
-    return ratios
+    return ratios'''
 
 def main_development():
     """Run on Data Set 5 for development"""
@@ -26,7 +26,6 @@ def main_development():
     print(f"Training data: {train_data.shape}, Testing data: {test_data.shape}")
     
     c_min, c_max = 2, 10
-    c_values = list(range(c_min, c_max+1))
     # jc_values = []
     # iterations_list = []
     #
@@ -39,34 +38,30 @@ def main_development():
     #     iterations_list.append(iterations_count)
     #     print(f"Jc = {obj_func:.2f}, Iterations = {iterations_count}")
 
-    cmeans = FuzzyCMeans(train_data, m=2, epsilon=0.001)
-    optimal_c, jc_values, ratios, iterations_list = cmeans.optimize_c_value(c_min, c_max)
-    jc_values = [jc_values[c] for c in range(c_min, c_max)]
-    iterations_list = [iterations_list[c] for c in range(c_min, c_max)]
+    cmeans = FuzzyCMeans(train_data, c=None, m=2, epsilon=0.001, auto_train=False)
+    optimal_c, jc_values_dict, ratios_dict, iterations_dict = cmeans.optimize_c_value(c_min, c_max)
 
+    print(f"\nOptimal c: {optimal_c} (minimum Rc = {ratios_dict[optimal_c]:.4f})")
+
+    # Print Rc ratios 
     print(f"\nRc Ratios (c from 3 to 9):")
-    for c in range(c_min+1, c_max):
-        print(f"  c={c}: Rc = {ratios[c]:.4f}")
-    
-    # Find optimal c (minimum Rc ratio)
-    print(f"\nOptimal c: {optimal_c} (minimum Rc = {ratios[optimal_c]:.4f})")
-    
+    for c in range(3, 10):
+        if c in ratios_dict:
+            print(f"  c={c}: Rc = {ratios_dict[c]:.4f}")
+
+    c_values = list(range(c_min, c_max + 1))
+    jc_values = [jc_values_dict[c] for c in c_values]
+    iterations_list = [iterations_dict[c] for c in c_values]
+
     # Train final model with optimal c
-    print(f"\nTraining final model with optimal c = {optimal_c}")
-    final_model = FuzzyCMeans(train_data, c=optimal_c, m=2, epsilon=0.001)
-    cluster_centroids, jc_value, cluster_ids, iters = final_model.train()
+    final_model = FuzzyCMeans(train_data, c=optimal_c, m=2, epsilon=0.001, auto_train=True)
     
-    # Export Jc vs Iterations to Excel
     export_jc_iterations_to_excel(c_values, jc_values, iterations_list, "jc_iterations_dev.xlsx")
-    
-    # Create file C with cluster assignments 
-    export_cluster_file(train_data, cluster_ids, "C_output_dev.csv")
-    
-    # Plot final clusters
-    plot_final_clusters(train_data, cluster_ids, final_model.c, "Data Set 5 - Final Clusters (Training Data)")
+    export_cluster_file(train_data, final_model.centroid_classification, "C_output_dev.csv")
+    plot_final_clusters(train_data, final_model.centroid_classification, final_model.c, "Data Set 5 - Final Clusters (Training Data)")
     
     # Save centroids for classification
-    np.savetxt("centroids_dev.csv", cluster_centroids, delimiter=',')
+    np.savetxt("centroids_dev.csv", final_model.centroid_classification, delimiter=',')
     print("Centroids saved to centroids_dev.csv")
     
     # CLASSIFICATION 
@@ -92,33 +87,36 @@ def main_submission():
     print(f"Training data: {train_data.shape} (480 points)")
     print(f"Testing data: {test_data.shape} (140 points)")
     
+    #find optimal c value
     print("\nFinding optimal c using Rc ratio...")
-    temp_model = FuzzyCMeans(train_data, c=None, m=2, epsilon=0.001)
-    optimal_c = temp_model.c
-    print(f"Optimal c found: {optimal_c}")
+    c_min, c_max = 2, 10
+    cmeans_optimizer = FuzzyCMeans(train_data, c=None, m=2, epsilon=0.001, auto_train=False)
+    optimal_c, jc_values_dict, ratios_dict, iterations_dict = cmeans_optimizer.optimize_c_value(c_min, c_max)
     
-    # Generate data for plotting (c from 2 to 10)
-    c_values = list(range(2, 11))
-    jc_values = []
-    iterations_list = []
+    print(f"Optimal c: {optimal_c} (minimum Rc = {ratios_dict[optimal_c]:.4f})")
     
-    for c in c_values:
-        model = FuzzyCMeans(train_data, c=c, m=2, epsilon=0.001)
-        jc_values.append(model.obj_func)
-        iterations_list.append(model.iterations_count)
+    c_values = list(range(c_min, c_max + 1))
+    jc_values = [jc_values_dict[c] for c in c_values]
+    iterations_list = [iterations_dict[c] for c in c_values]
+    
+    # Print Rc ratios and store values in excel
+    print(f"\nRc Ratios (c from 3 to 9):")
+    for c in range(3, 10):
+        if c in ratios_dict:
+            print(f"  c={c}: Rc = {ratios_dict[c]:.4f}")
     
     export_jc_iterations_to_excel(c_values, jc_values, iterations_list, "jc_iterations_submission.xlsx")
-    
-    final_model = FuzzyCMeans(train_data, c=optimal_c, m=2, epsilon=0.001)
+
+    #get the final model with optimal c
+    print(f"\nUsing optimal model with c = {optimal_c}")
+    final_model = FuzzyCMeans(train_data, c=optimal_c, m=2, epsilon=0.001, auto_train = True)
     
     # CLASSIFICATION of 140 test points 
     print("\nClassifying 140 test points...")
-    test_cluster_ids, test_jc, test_U = final_model.test(test_data)
+    test_cluster_ids, test_jc = final_model.test(test_data)
     
-    # Export cluster assignments for 140 test points
-    export_cluster_file(test_cluster_ids, test_data, "C_output_submission.csv")
-    
-    # Plot final clusters for 140 test points 
+    # Export cluster assignments and plot final clusters for 140 test points
+    export_cluster_file(test_data, test_cluster_ids, "C_output_submission.csv")
     plot_final_clusters(test_data, test_cluster_ids, "Data Set 2 - Final Clusters (140 Test Points)")    
     np.savetxt("centroids_submission.csv", final_model.cluster_centroids, delimiter=',')
     
