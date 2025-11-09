@@ -62,20 +62,27 @@ def load_interspersed_data(data, total_samples, data_set_number=5):
         test_data = data[test_indices]
     return train_data, test_data
 
-def export_jc_iterations_to_excel(c_values, jc_values, iterations, filename="jc_iterations.xlsx"):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Jc_vs_Iterations"
-    headers = ["Clusters (c)", "Objective Function (Jc)", "Iterations"]
-    ws.append(headers)
-    header_font = Font(bold=True)
-    for col in range(1, len(headers) + 1):
-        ws.cell(row=1, column=col).font = header_font
-        ws.cell(row=1, column=col).alignment = Alignment(horizontal='center')
-    for c, jc, iters in zip(c_values, jc_values, iterations):
-        ws.append([c, jc, iters])
-    wb.save(filename)
-    print(f"[+] Exported Excel file → '{filename}' (no embedded charts)")
+def plot_jc_iterations(c_values, jc_values, iterations, dataset_name="Data Set 5"):
+    import matplotlib.pyplot as plt
+    import os
+    fig, ax1 = plt.subplots(figsize=(8, 6))
+    color_jc = 'tab:blue'
+    ax1.set_xlabel('Number of Clusters (c)')
+    ax1.set_ylabel('Objective Function (Jc)', color=color_jc)
+    ax1.plot(c_values, jc_values, color=color_jc, marker='o', label='Objective Function (Jc)')
+    ax1.tick_params(axis='y', labelcolor=color_jc)
+    ax2 = ax1.twinx()
+    color_iter = 'tab:orange'
+    ax2.set_ylabel('No. of Iterations', color=color_iter)
+    ax2.plot(c_values, iterations, color=color_iter, marker='s', linestyle='--', label='No. of Iterations')
+    ax2.tick_params(axis='y', labelcolor=color_iter)
+    plt.title(f"{dataset_name} - Objective Function vs Iterations")
+    fig.tight_layout()
+    safe_title = f"{dataset_name.replace(' ', '_')}_Jc_vs_Iterations.png"
+    output_path = os.path.join(".", safe_title)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    print(f"[+] Saved Objective Function & Iterations plot → '{output_path}'")
+    plt.close(fig)
 
 def export_cluster_file(data, cluster_ids, filename="C_output.csv"):
     x = data[:, 0]
@@ -125,9 +132,8 @@ def plot_final_clusters(train_data, cluster_ids, num_clusters, centroids=None, t
     plt.ylabel("Y")
     plt.legend()
     plt.grid(True)
-    os.makedirs("plots", exist_ok=True)
     safe_title = title.replace(" ", "_")
-    output_path = os.path.join("plots", f"{safe_title}.png")
+    output_path = os.path.join(".", f"{safe_title}.png")
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     print(f"[+] Saved final cluster plot (with centroids) → '{output_path}'")
     plt.show()
